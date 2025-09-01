@@ -39,6 +39,9 @@ def secs_to_hm(secs: int) -> str:
     return f"{h}h{m:02d}m"
 
 def post_tweet(text: str):
+    if os.getenv("DEBUG") == "1":
+        print("DEBUG TWEET:", text)
+        return
     headers = {
         "Authorization": f"Bearer {X_ACCESS_TOKEN}",
         "Content-Type": "application/json",
@@ -46,6 +49,7 @@ def post_tweet(text: str):
     }
     resp = requests.post(TW_POST_URL, headers=headers, json={"text": text}, timeout=20)
     resp.raise_for_status()
+
 
 def fetch_live(slug: str):
     """
