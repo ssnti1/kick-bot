@@ -10,6 +10,7 @@ POLL_SEC = int(os.getenv("POLL_SEC", "25"))              # intervalo objetivo (s
 X_ACCESS_TOKEN = os.environ["X_ACCESS_TOKEN"]            # token de usuario con permiso de escribir
 TWEET_PREFIX = os.getenv("TWEET_PREFIX", "🔴 stream apagado")
 POST_ON_START = os.getenv("POST_ON_START", "0") == "1"   # 1 = también tuitear cuando se enciende
+INIT_ON_AS_START = os.getenv("INIT_ON_AS_START", "0") == "1"  # 1 = si ya está ON al arrancar, tuitea inicio
 
 KICK_LIVE_URL = "https://kick.com/api/v2/channels/{slug}/livestream"
 TW_POST_URL   = "https://api.twitter.com/2/tweets"
@@ -97,6 +98,33 @@ signal.signal(signal.SIGTERM, handle_sigterm)
 signal.signal(signal.SIGINT, handle_sigterm)
 
 print(f"monitoring {len(SLUGS)} channel(s): {', '.join(SLUGS)}")
+
+# ========= bootstrap: marcar ON si ya estaban en vivo al arrancar =========
+def bootstrap_live_states():
+    now = time.time()
+    for slug in SLUGS:
+        data = fetch_live(slug)
+        if data:  # ya está en vivo
+            viewers = extract_viewers(data)
+            s = state[slug]
+            s.update({
+                "was_live": True,
+                "start_ts": now,
+                "last_sample_ts": now,
+                "peak": viewers,
+                "sum_viewers": viewers,
+                "samples": 1,
+                "viewer_seconds": 0.0
+            })
+            print(f"[{slug}] BOOTSTRAP: detected LIVE on startup (viewers={viewers})")
+            if POST_ON_START and INIT_ON_AS_START:
+                try:
+                    post_tweet(f"🟢 {slug} está en vivo ahora mismo en kick.com/{slug}")
+                except Exception as e:
+                    print(f"[{slug}] post start error (bootstrap):", e)
+
+# Llama al bootstrap ANTES del loop principal
+bootstrap_live_states()
 
 # ========= bucle principal =========
 while running:
