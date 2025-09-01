@@ -3,11 +3,16 @@ import time
 import requests
 import signal
 import random
+from requests_oauthlib import OAuth1Session
 
 # ========= config desde env =========
+
+API_KEY = os.environ["API_KEY"]
+API_SECRET = os.environ["API_SECRET"]
+ACCESS_TOKEN = os.environ["ACCESS_TOKEN"]
+ACCESS_SECRET = os.environ["ACCESS_SECRET"]
 SLUGS = [s.strip() for s in os.getenv("SLUGS", "nombre_del_canal").split(",") if s.strip()]
 POLL_SEC = int(os.getenv("POLL_SEC", "25"))              # intervalo objetivo (seg)
-X_ACCESS_TOKEN = os.environ["X_ACCESS_TOKEN"]            # token de usuario con permiso de escribir
 TWEET_PREFIX = os.getenv("TWEET_PREFIX", "🔴 stream apagado")
 POST_ON_START = os.getenv("POST_ON_START", "0") == "1"   # 1 = también tuitear cuando se enciende
 INIT_ON_AS_START = os.getenv("INIT_ON_AS_START", "0") == "1"  # 1 = si ya está ON al arrancar, tuitea inicio
@@ -42,13 +47,19 @@ def post_tweet(text: str):
     if os.getenv("DEBUG") == "1":
         print("DEBUG TWEET:", text)
         return
-    headers = {
-        "Authorization": f"Bearer {X_ACCESS_TOKEN}",
-        "Content-Type": "application/json", 
-        **UA
-    }
-    resp = requests.post(TW_POST_URL, headers=headers, json={"text": text}, timeout=20)
-    resp.raise_for_status()
+    oauth = OAuth1Session(
+        API_KEY,
+        client_secret=API_SECRET,
+        resource_owner_key=ACCESS_TOKEN,
+        resource_owner_secret=ACCESS_SECRET
+    )
+    resp = oauth.post(
+        "https://api.twitter.com/2/tweets",
+        json={"text": text},
+        timeout=20
+    )
+    if not resp.ok:
+        raise RuntimeError(f"X post failed {resp.status_code}: {resp.text}")
 
 
 def fetch_live(slug: str):
