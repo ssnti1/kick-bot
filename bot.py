@@ -103,6 +103,13 @@ signal.signal(signal.SIGINT, handle_sigterm)
 
 print(f"monitoring {len(SLUGS)} channel(s): {', '.join(SLUGS)}")
 
+try:
+    post_tweet("🚀 prueba automática del bot (ignore)")
+    print("Tweet de prueba enviado ✅")
+except Exception as e:
+    print("Error al enviar tweet de prueba:", e)
+
+
 # ========= bootstrap: marcar ON si ya estaban en vivo al arrancar =========
 def bootstrap_live_states():
     now = time.time()
