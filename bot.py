@@ -44,7 +44,7 @@ def post_tweet(text: str):
         return
     headers = {
         "Authorization": f"Bearer {X_ACCESS_TOKEN}",
-        "Content-Type": "application/json",
+        "Content-Type": "application/json", 
         **UA
     }
     resp = requests.post(TW_POST_URL, headers=headers, json={"text": text}, timeout=20)
